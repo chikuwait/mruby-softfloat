@@ -108,14 +108,26 @@ MRuby::Build.new('host-debug') do |conf|
   # conf.enable_bintest
 end
 
-# Define cross build settings
+# MRuby::CrossBuild.new('32bit') do |conf|
+#   toolchain :gcc
+#
+#   conf.cc.flags << "-m32"
+#   conf.linker.flags << "-m32"
+#
+#   conf.build_mrbtest_lib_only
+#
+#   conf.gem 'examples/mrbgems/c_and_ruby_extension_example'
+#
+#   conf.test_runner.command = 'env'
+#
+# end
 MRuby::CrossBuild.new('kernel') do |conf|
-  toolchain :gcc
+   toolchain :gcc
 
-#   conf.cc.flags << "-I/lib/modules" + `uname -r`.chop + "/build/include" 
-  conf.linker.flags << "-Iinclude/kernel -mcmodel=kernel -mno-red-zone -mfpmath=387 -mno-sse -mno-sse2 -mno-mmx -mno-3dnow -msoft-float -fno-asynchronous-unwind-tables -fno-omit-frame-pointer"
-  conf.cc.defines << %w(DISABLE_STDIO)
-  conf.cc.defines << %w(DISABLE_FLOAT)
-  conf.cc.defines << %w(MRB_INT64)
-  conf.bins = []
+#   conf.cc.flags << "-I/lib/modules/" + `uname -r`.chop + "/build/include"
+   conf.cc.flags << "-Iinclude/kernel -mcmodel=kernel -mno-red-zone -mfpmath=387 -mno-sse -mno-sse2 -mno-mmx -mno-3dnow -msoft-float -fno-asynchronous-unwind-tables -fno-omit-frame-pointer"
+   conf.cc.defines << %w(DISABLE_STDIO)
+   conf.cc.defines << %w(DISABLE_FLOAT)
+   conf.cc.defines << %w(MRB_INT64)
+   conf.bins = []
 end
