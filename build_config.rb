@@ -122,11 +122,11 @@ end
 #   conf.test_runner.command = 'env'
 #
 # end
-MRuby::CrossBuild.new('kernel') do |conf|
+MRuby::CrossBuild.new('bitvisor') do |conf|
    toolchain :gcc
 
-#   conf.cc.flags << "-I/lib/modules/" + `uname -r`.chop + "/build/include"
-   conf.cc.flags << "-Iinclude/kernel -mcmodel=kernel -mno-red-zone -mfpmath=387 -mno-sse -mno-sse2 -mno-mmx -mno-3dnow -msoft-float -fno-asynchronous-unwind-tables -fno-omit-frame-pointer"
+
+   conf.cc.flags << "-I /home/a/work/bitvisor/include -mcmodel=small -mno-red-zone -mfpmath=387 -mno-sse -mno-sse2 -mno-mmx -mno-3dnow -msoft-float -fno-asynchronous-unwind-tables -fno-omit-frame-pointer"
    conf.cc.defines << %w(DISABLE_STDIO)
    conf.cc.defines << %w(DISABLE_FLOAT)
    conf.cc.defines << %w(MRB_INT64)
