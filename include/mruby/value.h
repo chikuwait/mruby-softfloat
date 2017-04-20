@@ -32,7 +32,13 @@ struct mrb_state;
 # define MRB_INT_MAX (INT32_MAX>>MRB_FIXNUM_SHIFT)
 #endif
 
-#ifdef MRB_USE_FLOAT
+#if defined(DISABLE_FLOAT)
+  typedef long mrb_float;
+# define double long
+int sprintf(char *str, const char *format, ...);
+# define mrb_float_to_str(buf, i) sprintf(buf, "%d", i)
+# define str_to_mrb_float(buf) strtol(buf, NULL, 10)
+#elif defined(MRB_USE_FLOAT)
   typedef float mrb_float;
 # define mrb_float_to_str(buf, i) sprintf(buf, "%.7e", i)
 # define str_to_mrb_float(buf) strtof(buf, NULL)
