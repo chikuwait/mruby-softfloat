@@ -125,10 +125,20 @@ end
 MRuby::CrossBuild.new('bitvisor') do |conf|
    toolchain :gcc
 
+   cc.command = linker.command = 'x86_64-elf-gcc'
+   cc.include_paths << '../include'
 
-   conf.cc.flags << "-I /home/a/work/bitvisor/include -mcmodel=small -mno-red-zone -mfpmath=387 -mno-sse -mno-sse2 -mno-mmx -mno-3dnow -msoft-float -fno-asynchronous-unwind-tables -fno-omit-frame-pointer"
-   conf.cc.defines << %w(DISABLE_STDIO)
-   conf.cc.defines << %w(DISABLE_FLOAT)
-   conf.cc.defines << %w(MRB_INT64)
+   bits = 32
+   backtrace = true
+
+   cc.flags <<
+     " -m#{bits} -mno-red-zone -nostdinc -g -O" <<
+     " -ffreestanding -fno-builtin -fno-stack-protector" <<
+     " -fno-strict-aliasing -Wall"
+   cc.flags << (backtrace ? '-fno-omit-frame-pointer' : '-fomit-frame-pointer')
+
+   cc.flags << '-mno-sse -mno-sse2 -mfpmath=387 -msoft-float -mno-mmx -mno-3dnow'
+   conf.cc.defines << %w(DISABLE_STDIO BITVISOR_KERNEL)
+   #conf.cc.defines << %w(MRB_INT64)
    conf.bins = []
 end
