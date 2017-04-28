@@ -125,7 +125,7 @@ end
 MRuby::CrossBuild.new('bitvisor') do |conf|
    toolchain :gcc
 
-   cc.command = linker.command = 'x86_64-elf-gcc'
+
    cc.include_paths << '../include'
 
    bits = 32
