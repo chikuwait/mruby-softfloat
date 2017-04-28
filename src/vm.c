@@ -6,6 +6,7 @@
 
 #include <stddef.h>
 #include <stdarg.h>
+#include <stdlib.h>
 #include <math.h>
 #include "mruby.h"
 #include "mruby/array.h"
