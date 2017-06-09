@@ -138,8 +138,8 @@ mrb_flo_to_str(mrb_state *mrb, mrb_float flo)
       *(c++) = '-';
     }
 
-    if (n != 0.0) {
-      if (n > 1.0) {
+    if (n != (mrb_float)0.0) {
+      if (n > (mrb_float)1.0) {
         exp = (int)floor(log10(n));
       }
       else {
@@ -156,7 +156,7 @@ mrb_flo_to_str(mrb_state *mrb, mrb_float flo)
       double f = n;
       double fd = 0;
       for (i = 0; i < FLO_MAX_DIGITS; ++i) {
-        f = (f - fd) * 10.0;
+        f = (f - fd) * (mrb_float)10.0;
         fd = floor(f + FLO_EPSILON);
         if (fd != 0) {
           if (beg < 0) beg = i;
@@ -170,7 +170,7 @@ mrb_flo_to_str(mrb_state *mrb, mrb_float flo)
     if (abs(exp) + length >= FLO_MAX_DIGITS) {
       /* exponent representation */
       e = TRUE;
-      n = n / pow(10.0, exp);
+      n = n / pow((mrb_float)10.0, exp);
       if (isinf(n)) {
         if (s < c) {            /* s[0] == '-' */
           return mrb_str_new_lit(mrb, "-0.0");
@@ -190,7 +190,7 @@ mrb_flo_to_str(mrb_state *mrb, mrb_float flo)
     /* puts digits */
     while (max_digits >= 0) {
       double weight = (m < 0) ? 0.0 : pow(10.0, m);
-      double fdigit = (m < 0) ? n * 10.0 : n / weight;
+      double fdigit = (m < 0) ? n * (mrb_float)10.0 : n / weight;
 
       if (fdigit < 0) fdigit = n = 0;
       if (m < -1 && fdigit < FLO_EPSILON) {
@@ -200,12 +200,12 @@ mrb_flo_to_str(mrb_state *mrb, mrb_float flo)
       }
       digit = (int)floor(fdigit + FLO_EPSILON);
       if (m == 0 && digit > 9) {
-        n /= 10.0;
+        n /= (mrb_float)10.0;
         exp++;
         continue;
       }
       *(c++) = '0' + digit;
-      n = (m < 0) ? n * 10.0 - digit : n - (digit * weight);
+      n = (m < 0) ? n * (mrb_float)10.0 - digit : n - (digit * weight);
       max_digits--;
       if (m-- == 0) {
         *(c++) = '.';
@@ -302,7 +302,7 @@ flodivmod(mrb_state *mrb, mrb_float x, mrb_float y, mrb_float *divp, mrb_float *
   mrb_float div;
   mrb_float mod;
 
-  if (y == 0.0) {
+  if (y == (mrb_float)0.0) {
     div = INFINITY;
     mod = NAN;
   }
@@ -314,7 +314,7 @@ flodivmod(mrb_state *mrb, mrb_float x, mrb_float y, mrb_float *divp, mrb_float *
       div = (x - mod) / y;
     if (y*mod < 0) {
       mod += y;
-      div -= 1.0;
+      div -= (mrb_float)1.0;
     }
   }
 
@@ -424,7 +424,7 @@ flo_hash(mrb_state *mrb, mrb_value num)
 
   d = (mrb_float)mrb_fixnum(num);
   /* normalize -0.0 to 0.0 */
-  if (d == 0) d = 0.0;
+  if (d == 0) d = (mrb_float)0.0;
   c = (char*)&d;
   for (hash=0, i=0; i<sizeof(mrb_float);i++) {
     hash = (hash * 971) ^ (unsigned char)c[i];
@@ -590,7 +590,7 @@ flo_round(mrb_state *mrb, mrb_value num)
   f = 1.0;
   i = abs(ndigits);
   while  (--i >= 0)
-    f = f*10.0;
+    f = f*(mrb_float)10.0;
 
   if (isinf(f)) {
     if (ndigits < 0) number = 0;
@@ -638,8 +638,8 @@ flo_truncate(mrb_state *mrb, mrb_value num)
 {
   mrb_float f = mrb_float(num);
 
-  if (f > 0.0) f = floor(f);
-  if (f < 0.0) f = ceil(f);
+  if (f > (mrb_float)0.0) f = floor(f);
+  if (f < (mrb_float)0.0) f = ceil(f);
 
   if (!FIXABLE(f)) {
     return mrb_float_value(mrb, f);

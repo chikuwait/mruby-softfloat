@@ -188,7 +188,7 @@ typedef struct mrb_state {
   mrb_int atexit_stack_len;
 } mrb_state;
 
-#if __STDC_VERSION__ >= 201112L
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
 # define mrb_noreturn _Noreturn
 #elif defined __GNUC__ && !defined __STRICT_ANSI__
 # define mrb_noreturn __attribute__((noreturn))
@@ -451,7 +451,7 @@ MRB_API void mrb_show_copyright(mrb_state *mrb);
 #define mrb_assert_int_fit(t1,n,t2,max) ((void)0)
 #endif
 
-#if __STDC_VERSION__ >= 201112L
+#if defined(__STDC_VERSION__) && __STDC_VERSION__ >= 201112L
 #define mrb_static_assert(exp, str) _Static_assert(exp, str)
 #else
 #define mrb_static_assert(exp, str) mrb_assert(exp)
