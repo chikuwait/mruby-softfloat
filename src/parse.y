@@ -7,7 +7,7 @@
 %{
 #undef PARSER_DEBUG
 
-#define YYDEBUG 1
+#define YYDEBUG 0
 #define YYERROR_VERBOSE 1
 /*
  * Force yacc to use our memory management.  This is a little evil because
@@ -21,6 +21,7 @@
 #include <errno.h>
 #include <stdlib.h>
 #include <string.h>
+#include <printf.h>
 #include "mruby.h"
 #include "mruby/compile.h"
 #include "mruby/proc.h"
