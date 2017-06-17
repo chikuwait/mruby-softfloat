@@ -1,4 +1,6 @@
 typedef unsigned long size_t;
+typedef void *FILE;
+#define stderr NULL
 void free(void *ptr);
 void *realloc(void *ptr, size_t size);
 int abs(int j);

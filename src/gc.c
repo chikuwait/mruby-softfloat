@@ -6,6 +6,7 @@
 
 #include <string.h>
 #include <stdlib.h>
+#include <printf.h>
 #include "mruby.h"
 #include "mruby/array.h"
 #include "mruby/class.h"
@@ -173,10 +174,12 @@ MRB_API void*
 mrb_realloc_simple(mrb_state *mrb, void *p,  size_t len)
 {
   void *p2;
-
+  fprintf(stderr,"in mrb_realloc_simple\n");
   p2 = (mrb->allocf)(mrb, p, len, mrb->allocf_ud);
   if (!p2 && len > 0 && mrb->heaps) {
+    fprintf(stderr,"call before mrb_full_gc\n");
     mrb_full_gc(mrb);
+    fprintf(stderr,"call mrb_full_gc\n");
     p2 = (mrb->allocf)(mrb, p, len, mrb->allocf_ud);
   }
 
@@ -188,7 +191,7 @@ MRB_API void*
 mrb_realloc(mrb_state *mrb, void *p, size_t len)
 {
   void *p2;
-
+  fprintf(stderr,"in mrb_realloc\n");
   p2 = mrb_realloc_simple(mrb, p, len);
   if (!p2 && len) {
     if (mrb->out_of_memory) {
@@ -196,7 +199,9 @@ mrb_realloc(mrb_state *mrb, void *p, size_t len)
     }
     else {
       mrb->out_of_memory = TRUE;
+      fprintf(stderr,"call before mrb_exc_raise\n");
       mrb_exc_raise(mrb, mrb_obj_value(mrb->nomem_err));
+      fprintf(stderr,"call before mrb_exc_raise\n");
     }
   }
   else {
