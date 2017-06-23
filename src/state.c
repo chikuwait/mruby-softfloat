@@ -69,7 +69,6 @@ mrb_default_allocf(mrb_state *mrb, void *p, size_t size, void *ud)
   }
   else {
     memsum += size;
-    fprintf(stderr,"\n\n----realloc::%zd/memsum::%zd----\n\n",size,memsum);
     return realloc(p, size);
   }
 }
