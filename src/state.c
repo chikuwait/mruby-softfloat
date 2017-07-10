@@ -27,7 +27,6 @@ inspect_main(mrb_state *mrb, mrb_value mod)
 MRB_API mrb_state*
 mrb_open_core(mrb_allocf f, void *ud)
 {
-  fprintf(stderr,"\ncall mrb_open_core\n");
   static const mrb_state mrb_state_zero = { 0 };
   static const struct mrb_context mrb_context_zero = { 0 };
   mrb_state *mrb;
@@ -42,21 +41,16 @@ mrb_open_core(mrb_allocf f, void *ud)
   mrb->atexit_stack_len = 0;
 
 #ifndef MRB_GC_FIXED_ARENA
-  fprintf(stderr,"\ncall before mrb->arena mrb_malloc\n");
   mrb->arena = (struct RBasic**)mrb_malloc(mrb, sizeof(struct RBasic*)*MRB_GC_ARENA_SIZE);
-  fprintf(stderr,"call after mrb->arena mrb_malloc\n");
   mrb->arena_capa = MRB_GC_ARENA_SIZE;
 #endif
 
   mrb_init_heap(mrb);
-  fprintf(stderr,"call before mrb->c mrb_malloc\n");
   mrb->c = (struct mrb_context*)mrb_malloc(mrb, sizeof(struct mrb_context));
-  fprintf(stderr,"call after mrb->c mrb_malloc\n");
   *mrb->c = mrb_context_zero;
   mrb->root_c = mrb->c;
 
   mrb_init_core(mrb);
-   fprintf(stderr,"call mrb_init_core\n");
   return mrb;
 }
 
@@ -108,16 +102,13 @@ mrb_alloca_free(mrb_state *mrb)
 MRB_API mrb_state*
 mrb_open(void)
 {
-  fprintf(stderr,"call mrb_open\n");
   mrb_state *mrb = mrb_open_allocf(mrb_default_allocf, NULL);
-
   return mrb;
 }
 
 MRB_API mrb_state*
 mrb_open_allocf(mrb_allocf f, void *ud)
 {
-  fprintf(stderr,"call mrb_open_allocf\n");
   mrb_state *mrb = mrb_open_core(f, ud);
 
   if (mrb == NULL) {
