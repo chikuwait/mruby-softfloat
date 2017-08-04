@@ -528,10 +528,6 @@ static int
 read_binary_header(const uint8_t *bin, size_t *bin_size, uint16_t *crc, uint8_t *flags)
 {
   const struct rite_binary_header *header = (const struct rite_binary_header *)bin;
-    fprintf(stderr,"bin::%p\n",bin);
-    fprintf(stderr,"header::%p\n",header);
-    fprintf(stderr,"binary_ident = %x %x %x %x \n",*(bin),*(bin+1),*(bin+2),*(bin+3));
-    fprintf(stderr,"RITE_BINARY_IDENT::%s\n",RITE_BINARY_IDENT);
 
   if (memcmp(header->binary_ident, RITE_BINARY_IDENT, sizeof(header->binary_ident)) == 0) {
     if (bigendian_p())
