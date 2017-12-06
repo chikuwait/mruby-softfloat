@@ -583,13 +583,13 @@ mrb_check_num_exact(mrb_state *mrb, mrb_float num)
 static mrb_value
 flo_floor(mrb_state *mrb, mrb_value num)
 {
-  mrb_float f = floor(mrb_float(num));
+  mrb_float f = f64_floor(mrb_float(num));
 
   mrb_check_num_exact(mrb, f);
   if (!FIXABLE_FLOAT(f)) {
     return mrb_float_value(mrb, f);
   }
-  return mrb_fixnum_value((mrb_int)f);
+  return mrb_fixnum_value(f64_to_i64(f));
 }
 
 /* 15.2.9.3.8  */
@@ -609,13 +609,13 @@ flo_floor(mrb_state *mrb, mrb_value num)
 static mrb_value
 flo_ceil(mrb_state *mrb, mrb_value num)
 {
-  mrb_float f = ceil(mrb_float(num));
+  mrb_float f = f64_ceil(mrb_float(num));
 
   mrb_check_num_exact(mrb, f);
   if (!FIXABLE_FLOAT(f)) {
     return mrb_float_value(mrb, f);
   }
-  return mrb_fixnum_value((mrb_int)f);
+  return mrb_fixnum_value(f64_to_i64(f));
 }
 
 /* 15.2.9.3.12 */
