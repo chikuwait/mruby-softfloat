@@ -359,9 +359,9 @@ flo_eq(mrb_state *mrb, mrb_value x)
 
   switch (mrb_type(y)) {
   case MRB_TT_FIXNUM:
-    return mrb_bool_value(mrb_float(x) == (mrb_float)mrb_fixnum(y));
+    return mrb_bool_value(f64_eq(mrb_float(x),i64_to_f64(mrb_fixnum(y))));
   case MRB_TT_FLOAT:
-    return mrb_bool_value(mrb_float(x) == mrb_float(y));
+    return mrb_bool_value(f64_eq(mrb_float(x),mrb_float(y)));
   default:
     return mrb_false_value();
   }
