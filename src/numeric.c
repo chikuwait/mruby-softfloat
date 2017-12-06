@@ -59,6 +59,14 @@ f64_isfinite(float64_t f)
     return 1;
 }
 
+float64_t
+f64_floor (float64_t f) {
+    return f64_roundToInt(f,softfloat_round_min,0);
+}
+float64_t
+f64_ceil (float64_t f) {
+  return f64_roundToInt(f,softfloat_round_max,0);
+}
 
 float64_t
 f64_pow(float64_t a,float64_t b)
@@ -449,28 +457,28 @@ flo_shift(mrb_state *mrb, mrb_value x, mrb_int width)
   val = mrb_float(x);
   if (width < 0) {
     while (width++) {
-      val /= 2;
+      val = f64_div(val,i64_to_f64(2));
     }
 #if defined(_ISOC99_SOURCE)
     val = trunc(val);
 #else
-    if (val > 0){
-        val = floor(val);    
+    if (f64_lt(i64_to_f64(0),val)){
+        val = f64_floor(val);
     } else {
-        val = ceil(val);
+        val = f64_ceil(val);
     }
 #endif
-    if (val == 0 && mrb_float(x) < 0) {
+    if (f64_eq(val,i64_to_f64(0)) && f64_lt(mrb_float(x),i64_to_f64(0))){
       return mrb_fixnum_value(-1);
     }
   }
   else {
     while (width--) {
-      val *= 2;
+      val =f64_mul(val,i64_to_f64(2));
     }
   }
   if (FIXABLE_FLOAT(val)) {
-    return mrb_fixnum_value((mrb_int)val);
+    return mrb_fixnum_value(f64_to_i64(val));
   }
   return mrb_float_value(mrb, val);
 }
