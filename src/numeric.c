@@ -652,51 +652,53 @@ flo_ceil(mrb_state *mrb, mrb_value num)
 static mrb_value
 flo_round(mrb_state *mrb, mrb_value num)
 {
-  double number, f;
+  float64_t number, f;
   mrb_int ndigits = 0;
   mrb_int i;
 
   mrb_get_args(mrb, "|i", &ndigits);
   number = mrb_float(num);
 
-  if (0 < ndigits && (isinf(number) || f64_isnan(number))) {
+  if (0 < ndigits && (f64_isinf(number) || f64_isnan(number))) {
     return num;
   }
   mrb_check_num_exact(mrb, number);
 
-  f = 1.0;
+  f = i64_to_f64(1);
   i = ndigits >= 0 ? ndigits : -ndigits;
   while  (--i >= 0)
-    f = f*10.0;
+    f = f64_mul(f,i64_to_f64(10));
 
-  if (isinf(f)) {
-    if (ndigits < 0) number = 0;
+  if (f64_isinf(f)) {
+    if (ndigits < 0) number = i64_to_f64(0);
   }
   else {
-    double d;
+    float64_t d;
 
-    if (ndigits < 0) number /= f;
-    else number *= f;
+    if (ndigits < 0) number = f64_div(number,f);
+    else number = f64_mul(number,f);
 
     /* home-made inline implementation of round(3) */
-    if (number > 0.0) {
-      d = floor(number);
-      number = d + (number - d >= 0.5);
+    if (f64_lt(i64_to_f64(0),number)) {
+      float64_t buf = {0x3FE0000000000000};
+      d = f64_floor(number);
+      number = f64_add(d,i64_to_f64(f64_le(buf,f64_sub(number,d))));
     }
-    else if (number < 0.0) {
-      d = ceil(number);
-      number = d - (d - number >= 0.5);
+    else if (f64_lt(number,i64_to_f64(0))) {
+      float64_t buf = {0x3FE0000000000000};
+      d = f64_ceil(number);
+      number = f64_sub(d,i64_to_f64(f64_le(buf,f64_sub(d,number))));
     }
 
-    if (ndigits < 0) number *= f;
-    else number /= f;
+    if (ndigits < 0) number = f64_mul(number,f);
+    else number = f64_div(number,f);
   }
 
   if (ndigits > 0) {
-    if (!isfinite(number)) return num;
+    if (!f64_isfinite(number)) return num;
     return mrb_float_value(mrb, number);
   }
-  return mrb_fixnum_value((mrb_int)number);
+  return mrb_fixnum_value(f64_to_i64(number));
 }
 
 /* 15.2.9.3.14 */
