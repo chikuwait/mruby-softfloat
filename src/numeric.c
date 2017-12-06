@@ -28,6 +28,10 @@
 #define MRB_FLO_TO_STR_FMT "%.14g"
 #endif
 #endif
+
+static float64_t NAN = {0xFFFFFFFFFFFFFFFF};
+static float64_t INFINITY = {0x7FF0000000000000};
+static float64_t NEGATIVE_INFINITY = {0xFFF0000000000000};
 #define isNaNF64UI( a ) (((~(a) & UINT64_C( 0x7FF0000000000000 )) == 0) && ((a) & UINT64_C( 0x000FFFFFFFFFFFFF )))
 
 int
@@ -35,6 +39,27 @@ f64_isnan(float64_t f)
 {
     return isNaNF64UI(f.v);
 }
+int
+f64_isinf (float64_t f) {
+  if (((f.v>>52) & 0x07FF) != 0x07FF){
+    return 0;
+  }
+  if ((f.v<<12) != 0){
+    return 0;
+  }
+  return 1;
+}
+int
+f64_isfinite(float64_t f)
+{
+    if(f64_isinf(f))
+        return 0;
+    if(f64_isnan(f))
+        return 0;
+    return 1;
+}
+
+
 float64_t
 f64_pow(float64_t a,float64_t b)
 {
@@ -233,21 +258,21 @@ flodivmod(mrb_state *mrb, mrb_float x, mrb_float y, mrb_float *divp, mrb_float *
   mrb_float div;
   mrb_float mod;
 
-  if (y == 0.0) {
-    if (x > 0.0) div = INFINITY;
-    else if (x < 0.0) div = -INFINITY;
+  if (f64_eq(y,i64_to_f64(0))) {
+    if (f64_lt(i64_to_f64(0),x)) div = INFINITY;
+    else if (f64_lt(x,i64_to_f64(0))) div = NEGATIVE_INFINITY;
     else div = NAN;             /* x == 0.0 */
     mod = NAN;
   }
   else {
-    mod = fmod(x, y);
-    if (isinf(x) && isfinite(y))
+    mod = f64_rem(x, y);
+    if (f64_isinf(x) && f64_isfinite(y))
       div = x;
     else
-      div = (x - mod) / y;
-    if (y*mod < 0) {
-      mod += y;
-      div -= 1.0;
+      div = f64_div(f64_sub(x,mod),y);
+    if (f64_lt(f64_mul(y,mod),i64_to_f64(0))){
+      mod = f64_add(mod,y);
+      div = f64_sub(div,i64_to_f64(1));
     }
   }
 
