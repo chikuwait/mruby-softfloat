@@ -559,8 +559,8 @@ flo_finite_p(mrb_state *mrb, mrb_value num)
 void
 mrb_check_num_exact(mrb_state *mrb, mrb_float num)
 {
-  if (isinf(num)) {
-    mrb_raise(mrb, E_FLOATDOMAIN_ERROR, num < 0 ? "-Infinity" : "Infinity");
+  if (f64_isinf(num)) {
+    mrb_raise(mrb, E_FLOATDOMAIN_ERROR, f64_lt(num,i64_to_f64(0))? "-Infinity" : "Infinity");
   }
   if (f64_isnan(num)) {
     mrb_raise(mrb, E_FLOATDOMAIN_ERROR, "NaN");
