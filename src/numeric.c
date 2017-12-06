@@ -6,8 +6,8 @@
 
 #ifndef MRB_WITHOUT_FLOAT
 #include <float.h>
-#include <math.h>
 #endif
+#include <mruby/softfloat.h>
 #include <limits.h>
 #include <stdlib.h>
 
@@ -28,6 +28,31 @@
 #define MRB_FLO_TO_STR_FMT "%.14g"
 #endif
 #endif
+#define isNaNF64UI( a ) (((~(a) & UINT64_C( 0x7FF0000000000000 )) == 0) && ((a) & UINT64_C( 0x000FFFFFFFFFFFFF )))
+
+int
+f64_isnan(float64_t f)
+{
+    return isNaNF64UI(f.v);
+}
+float64_t
+f64_pow(float64_t a,float64_t b)
+{
+    int n = f64_to_i64(b);
+    float64_t buf = {a.v};
+    if(b.v == 0 ||a.v == 0x3FF0000000000000){
+        buf.v =0x3FF0000000000000;
+        return buf;
+    }
+    if(a.v == 0){
+        buf.v = 0;
+        return buf;
+    }
+    for(int m = 1; m < n; m++){
+        buf = f64_mul(buf,a);
+    }
+    return buf;
+}
 
 #ifndef MRB_WITHOUT_FLOAT
 MRB_API mrb_float
@@ -35,7 +60,7 @@ mrb_to_flo(mrb_state *mrb, mrb_value val)
 {
   switch (mrb_type(val)) {
   case MRB_TT_FIXNUM:
-    return (mrb_float)mrb_fixnum(val);
+    return (i64_to_f64(mrb_fixnum(val)));
   case MRB_TT_FLOAT:
     break;
   default:
@@ -97,7 +122,7 @@ num_pow(mrb_state *mrb, mrb_value x)
   mrb_raise(mrb, E_TYPE_ERROR, "non fixnum value");
 #else
  float_pow:
-  d = pow(mrb_to_flo(mrb, x), mrb_to_flo(mrb, y));
+  d = f64_pow(mrb_to_flo(mrb, x), mrb_to_flo(mrb, y));
   return mrb_float_value(mrb, d);
 #endif
 }
@@ -116,14 +141,7 @@ num_pow(mrb_state *mrb, mrb_value x)
 mrb_value
 mrb_num_div(mrb_state *mrb, mrb_value x, mrb_value y)
 {
-#ifdef MRB_WITHOUT_FLOAT
-  if (!mrb_fixnum_p(y)) {
-    mrb_raise(mrb, E_TYPE_ERROR, "non fixnum value");
-  }
-  return mrb_fixnum_value(mrb_fixnum(x) / mrb_fixnum(y));
-#else
-  return mrb_float_value(mrb, mrb_to_flo(mrb, x) / mrb_to_flo(mrb, y));
-#endif
+  return mrb_float_value(mrb, f64_div(mrb_to_flo(mrb, x),mrb_to_flo(mrb, y)));
 }
 
 /* 15.2.9.3.19(x) */
@@ -137,20 +155,10 @@ mrb_num_div(mrb_state *mrb, mrb_value x, mrb_value y)
 static mrb_value
 num_div(mrb_state *mrb, mrb_value x)
 {
-#ifdef MRB_WITHOUT_FLOAT
-  mrb_value y;
-
-  mrb_get_args(mrb, "o", &y);
-  if (!mrb_fixnum_p(y)) {
-    mrb_raise(mrb, E_TYPE_ERROR, "non fixnum value");
-  }
-  return mrb_fixnum_value(mrb_fixnum(x) / mrb_fixnum(y));
-#else
   mrb_float y;
 
   mrb_get_args(mrb, "f", &y);
-  return mrb_float_value(mrb, mrb_to_flo(mrb, x) / y);
-#endif
+  return mrb_float_value(mrb, f64_div(mrb_to_flo(mrb, x),y));
 }
 
 #ifndef MRB_WITHOUT_FLOAT
@@ -177,7 +185,7 @@ num_div(mrb_state *mrb, mrb_value x)
 static mrb_value
 flo_to_s(mrb_state *mrb, mrb_value flt)
 {
-  if (isnan(mrb_float(flt))) {
+  if (f64_isnan(mrb_float(flt))) {
     return mrb_str_new_lit(mrb, "NaN");
   }
   return mrb_float_to_str(mrb, flt, MRB_FLO_TO_STR_FMT);
@@ -198,7 +206,7 @@ flo_minus(mrb_state *mrb, mrb_value x)
   mrb_value y;
 
   mrb_get_args(mrb, "o", &y);
-  return mrb_float_value(mrb, mrb_float(x) - mrb_to_flo(mrb, y));
+  return mrb_float_value(mrb, f64_sub(mrb_float(x),mrb_to_flo(mrb, y)));
 }
 
 /* 15.2.9.3.3  */
@@ -521,7 +529,7 @@ mrb_check_num_exact(mrb_state *mrb, mrb_float num)
   if (isinf(num)) {
     mrb_raise(mrb, E_FLOATDOMAIN_ERROR, num < 0 ? "-Infinity" : "Infinity");
   }
-  if (isnan(num)) {
+  if (f64_isnan(num)) {
     mrb_raise(mrb, E_FLOATDOMAIN_ERROR, "NaN");
   }
 }
@@ -618,7 +626,7 @@ flo_round(mrb_state *mrb, mrb_value num)
   mrb_get_args(mrb, "|i", &ndigits);
   number = mrb_float(num);
 
-  if (0 < ndigits && (isinf(number) || isnan(number))) {
+  if (0 < ndigits && (isinf(number) || f64_isnan(number))) {
     return num;
   }
   mrb_check_num_exact(mrb, number);
@@ -687,7 +695,7 @@ flo_truncate(mrb_state *mrb, mrb_value num)
 static mrb_value
 flo_nan_p(mrb_state *mrb, mrb_value num)
 {
-  return mrb_bool_value(isnan(mrb_float(num)));
+  return mrb_bool_value(f64_isnan(mrb_float(num)));
 }
 #endif
 
@@ -1163,7 +1171,7 @@ mrb_flo_to_fixnum(mrb_state *mrb, mrb_value x)
     if (isinf(d)) {
       mrb_raise(mrb, E_FLOATDOMAIN_ERROR, d < 0 ? "-Infinity" : "Infinity");
     }
-    if (isnan(d)) {
+    if (f64_isnan(d)) {
       mrb_raise(mrb, E_FLOATDOMAIN_ERROR, "NaN");
     }
     if (FIXABLE_FLOAT(d)) {
