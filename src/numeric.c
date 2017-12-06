@@ -717,14 +717,14 @@ flo_truncate(mrb_state *mrb, mrb_value num)
 {
   mrb_float f = mrb_float(num);
 
-  if (f > 0.0) f = floor(f);
-  if (f < 0.0) f = ceil(f);
+  if (f64_lt(i64_to_f64(0),f)) f = f64_floor(f);
+  if (f64_lt(f,i64_to_f64(0))) f = f64_ceil(f);
 
   mrb_check_num_exact(mrb, f);
   if (!FIXABLE_FLOAT(f)) {
     return mrb_float_value(mrb, f);
   }
-  return mrb_fixnum_value((mrb_int)f);
+  return mrb_fixnum_value(f64_to_i64(f));
 }
 
 static mrb_value
