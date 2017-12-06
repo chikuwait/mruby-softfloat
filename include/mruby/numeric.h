@@ -16,6 +16,7 @@
  */
 MRB_BEGIN_DECL
 
+#define f64_to_i64(x) f64_to_i64((x),softfloat_round_min,1)
 #define TYPED_POSFIXABLE(f,t) ((f) <= (t)MRB_INT_MAX)
 #define TYPED_NEGFIXABLE(f,t) ((f) >= (t)MRB_INT_MIN)
 #define TYPED_FIXABLE(f,t) (TYPED_POSFIXABLE(f,t) && TYPED_NEGFIXABLE(f,t))
