@@ -375,7 +375,7 @@ value_int64(mrb_state *mrb, mrb_value x)
     return (int64_t)mrb_fixnum(x);
     break;
   case MRB_TT_FLOAT:
-    return (int64_t)mrb_float(x);
+    return (int64_t)f64_to_i64(mrb_float(x));
   default:
     mrb_raise(mrb, E_TYPE_ERROR, "cannot convert to Integer");
     break;
