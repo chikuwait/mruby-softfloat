@@ -553,7 +553,7 @@ flo_infinite_p(mrb_state *mrb, mrb_value num)
 static mrb_value
 flo_finite_p(mrb_state *mrb, mrb_value num)
 {
-  return mrb_bool_value(isfinite(mrb_float(num)));
+  return mrb_bool_value(f64_isfinite(mrb_float(num)));
 }
 
 void
