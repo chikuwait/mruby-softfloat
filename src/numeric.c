@@ -398,7 +398,7 @@ flo_rev(mrb_state *mrb, mrb_value x)
 {
   int64_t v1;
   mrb_get_args(mrb, "");
-  v1 = (int64_t)mrb_float(x);
+  v1 = f64_to_i64(mrb_float(x));
   return int64_value(mrb, ~v1);
 }
 
@@ -409,7 +409,7 @@ flo_and(mrb_state *mrb, mrb_value x)
   int64_t v1, v2;
   mrb_get_args(mrb, "o", &y);
 
-  v1 = (int64_t)mrb_float(x);
+  v1 = f64_to_i64(mrb_float(x));
   v2 = value_int64(mrb, y);
   return int64_value(mrb, v1 & v2);
 }
