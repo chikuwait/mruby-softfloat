@@ -868,7 +868,7 @@ fix_mod(mrb_state *mrb, mrb_value x)
   else {
     mrb_float mod;
 
-    flodivmod(mrb, (mrb_float)a, mrb_to_flo(mrb, y), 0, &mod);
+    flodivmod(mrb, i64_to_f64(a), mrb_to_flo(mrb, y), 0, &mod);
     return mrb_float_value(mrb, mod);
   }
 #endif
@@ -910,7 +910,7 @@ fix_divmod(mrb_state *mrb, mrb_value x)
     mrb_float div, mod;
     mrb_value a, b;
 
-    flodivmod(mrb, (mrb_float)mrb_fixnum(x), mrb_to_flo(mrb, y), &div, &mod);
+    flodivmod(mrb, i64_to_f64(mrb_fixnum(x)), mrb_to_flo(mrb, y), &div, &mod);
     a = mrb_float_value(mrb, div);
     b = mrb_float_value(mrb, mod);
     return mrb_assoc_new(mrb, a, b);
