@@ -1381,7 +1381,7 @@ cmpnum(mrb_state *mrb, mrb_value v1, mrb_value v2)
 #ifdef MRB_WITHOUT_FLOAT
     y = mrb_fixnum(v2);
 #else
-    y = (mrb_float)mrb_fixnum(v2);
+    y = i64_to_f64(mrb_fixnum(v2));
 #endif
     break;
 #ifndef MRB_WITHOUT_FLOAT
@@ -1392,10 +1392,10 @@ cmpnum(mrb_state *mrb, mrb_value v1, mrb_value v2)
   default:
     return -2;
   }
-  if (x > y)
+  if (f64_lt(y,x))
     return 1;
   else {
-    if (x < y)
+    if (f64_lt(x,y))
       return -1;
     return 0;
   }
