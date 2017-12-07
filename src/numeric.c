@@ -771,7 +771,7 @@ mrb_fixnum_mul(mrb_state *mrb, mrb_value x, mrb_value y)
     b = mrb_fixnum(y);
     if (mrb_int_mul_overflow(a, b, &c)) {
 #ifndef MRB_WITHOUT_FLOAT
-      return mrb_float_value(mrb, (mrb_float)a * (mrb_float)b);
+      return mrb_float_value(mrb, f64_mul(i64_to_f64(a),i64_to_f64(b)));
 #endif
     }
     return mrb_fixnum_value(c);
