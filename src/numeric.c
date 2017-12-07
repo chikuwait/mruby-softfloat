@@ -1233,7 +1233,7 @@ mrb_fixnum_plus(mrb_state *mrb, mrb_value x, mrb_value y)
     b = mrb_fixnum(y);
     if (mrb_int_add_overflow(a, b, &c)) {
 #ifndef MRB_WITHOUT_FLOAT
-      return mrb_float_value(mrb, (mrb_float)a + (mrb_float)b);
+      return mrb_float_value(mrb, f64_add(i64_to_f64(a),i64_to_f64(b)));
 #endif
     }
     return mrb_fixnum_value(c);
@@ -1241,7 +1241,7 @@ mrb_fixnum_plus(mrb_state *mrb, mrb_value x, mrb_value y)
 #ifdef MRB_WITHOUT_FLOAT
   mrb_raise(mrb, E_TYPE_ERROR, "non fixnum value");
 #else
-  return mrb_float_value(mrb, (mrb_float)a + mrb_to_flo(mrb, y));
+  return mrb_float_value(mrb, f64_add(i64_to_f64(a),mrb_to_flo(mrb, y)));
 #endif
 }
 
