@@ -1087,9 +1087,9 @@ lshift(mrb_state *mrb, mrb_int val, mrb_int width)
 #ifndef MRB_WITHOUT_FLOAT
 bit_overflow:
   {
-    mrb_float f = (mrb_float)val;
+    mrb_float f = i64_to_f64(val);
     while (width--) {
-      f *= 2;
+      f = f64_mul(f,i64_to_f64(2));
     }
     return mrb_float_value(mrb, f);
   }
