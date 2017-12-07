@@ -1203,14 +1203,14 @@ mrb_flo_to_fixnum(mrb_state *mrb, mrb_value x)
   else {
     mrb_float d = mrb_float(x);
 
-    if (isinf(d)) {
-      mrb_raise(mrb, E_FLOATDOMAIN_ERROR, d < 0 ? "-Infinity" : "Infinity");
+    if (f64_isinf(d)) {
+      mrb_raise(mrb, E_FLOATDOMAIN_ERROR, f64_lt(d,i64_to_f64(0)) ? "-Infinity" : "Infinity");
     }
     if (f64_isnan(d)) {
       mrb_raise(mrb, E_FLOATDOMAIN_ERROR, "NaN");
     }
     if (FIXABLE_FLOAT(d)) {
-      z = (mrb_int)d;
+      z = f64_to_i64(d);
     }
     else {
       mrb_raisef(mrb, E_ARGUMENT_ERROR, "number (%S) too big for integer", x);
