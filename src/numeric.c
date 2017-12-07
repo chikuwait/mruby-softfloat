@@ -779,7 +779,7 @@ mrb_fixnum_mul(mrb_state *mrb, mrb_value x, mrb_value y)
 #ifdef MRB_WITHOUT_FLOAT
   mrb_raise(mrb, E_TYPE_ERROR, "non fixnum value");
 #else
-  return mrb_float_value(mrb, (mrb_float)a * mrb_to_flo(mrb, y));
+  return mrb_float_value(mrb, f64_mul(i64_to_f64(a),mrb_to_flo(mrb, y)));
 #endif
 }
 
