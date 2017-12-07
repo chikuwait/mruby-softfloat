@@ -958,7 +958,7 @@ fix_equal(mrb_state *mrb, mrb_value x)
     return mrb_bool_value(mrb_fixnum(x) == mrb_fixnum(y));
 #ifndef MRB_WITHOUT_FLOAT
   case MRB_TT_FLOAT:
-    return mrb_bool_value((mrb_float)mrb_fixnum(x) == mrb_float(y));
+    return mrb_bool_value(f64_eq(i64_to_f64(mrb_fixnum(x)),mrb_float(y)));
 #endif
   default:
     return mrb_false_value();
