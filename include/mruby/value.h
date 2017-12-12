@@ -62,9 +62,11 @@ struct mrb_state;
 # define MRB_PRIx PRIx32
 #endif
 
+#include<mruby/softfloat.h>
+typedef float64_t mrb_float;
 
 #ifndef MRB_WITHOUT_FLOAT
-MRB_API double mrb_float_read(const char*, char**);
+MRB_API float64_t mrb_float_read(const char*, char**);
 #ifdef MRB_USE_FLOAT
   typedef float mrb_float;
 #else
