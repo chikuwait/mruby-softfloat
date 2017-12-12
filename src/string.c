@@ -1,5 +1,5 @@
 /*
-** string.c - String class
+* string.c - String class
 **
 ** See Copyright Notice in mruby.h
 */
@@ -2259,20 +2259,20 @@ mrb_str_to_i(mrb_state *mrb, mrb_value self)
 }
 
 #ifndef MRB_WITHOUT_FLOAT
-MRB_API double
+MRB_API float64_t
 mrb_cstr_to_dbl(mrb_state *mrb, const char * p, mrb_bool badcheck)
 {
   char *end;
   char buf[DBL_DIG * 4 + 10];
-  double d;
+  float64_t d;
 
   enum {max_width = 20};
 
-  if (!p) return 0.0;
+  if (!p) return i64_to_f64(0);
   while (ISSPACE(*p)) p++;
 
   if (!badcheck && p[0] == '0' && (p[1] == 'x' || p[1] == 'X')) {
-    return 0.0;
+    return i64_to_f64(0);
   }
   d = mrb_float_read(p, &end);
   if (p == end) {
@@ -2309,7 +2309,7 @@ bad:
     p = buf;
 
     if (!badcheck && p[0] == '0' && (p[1] == 'x' || p[1] == 'X')) {
-      return 0.0;
+      return i64_to_f64(0);
     }
 
     d = mrb_float_read(p, &end);
@@ -2322,7 +2322,7 @@ bad:
   return d;
 }
 
-MRB_API double
+MRB_API float64_t
 mrb_str_to_dbl(mrb_state *mrb, mrb_value str, mrb_bool badcheck)
 {
   char *s;
@@ -2803,7 +2803,7 @@ static const int maxExponent = 511; /* Largest possible base 10 exponent.  Any
                                      * produce underflow or overflow, so there's
                                      * no need to worry about additional digits.
                                      */
-static const double powersOf10[] = {/* Table giving binary powers of 10.  Entry */
+static const float64_t powersOf10[] = {/* Table giving binary powers of 10.  Entry */
     10.,                            /* is 10^2^i.  Used to convert decimal */
     100.,                           /* exponents into floating-point numbers. */
     1.0e4,
@@ -2815,7 +2815,7 @@ static const double powersOf10[] = {/* Table giving binary powers of 10.  Entry 
     1.0e256
 };
 
-MRB_API double
+MRB_API float64_t
 mrb_float_read(const char *string, char **endPtr)
 /*  const char *string;            A decimal ASCII floating-point number,
                                  * optionally preceded by white space.
@@ -2833,8 +2833,8 @@ mrb_float_read(const char *string, char **endPtr)
                                  * address here. */
 {
     int sign, expSign = FALSE;
-    double fraction, dblExp;
-    const double *d;
+    float64_t fraction, dblExp;
+    const float64_t *d;
     register const char *p;
     register int c;
     int exp = 0;                /* Exponent read from "EX" field. */
@@ -2918,7 +2918,7 @@ mrb_float_read(const char *string, char **endPtr)
       fracExp = decPt - mantSize;
     }
     if (mantSize == 0) {
-      fraction = 0.0;
+      fraction = i64_to_f64(0);
       p = string;
       goto done;
     }
@@ -2946,7 +2946,7 @@ mrb_float_read(const char *string, char **endPtr)
         }
         frac2 = 10*frac2 + (c - '0');
       }
-      fraction = (1.0e9 * frac1) + frac2;
+      fraction = f64_add(f64_mul(f64_mul(i64_to_f64(1),i64_to_f64(1000000000)),i64_to_f64(frac1)),i64_to_f64(frac2));
     }
 
     /*
@@ -2999,17 +2999,17 @@ mrb_float_read(const char *string, char **endPtr)
       exp = maxExponent;
       errno = ERANGE;
     }
-    dblExp = 1.0;
+    dblExp = i64_to_f64(1);
     for (d = powersOf10; exp != 0; exp >>= 1, d += 1) {
       if (exp & 01) {
-        dblExp *= *d;
+        dblExp = f64_mul(*d,dblExp);
       }
     }
     if (expSign) {
-      fraction /= dblExp;
+      fraction = f64_div(fraction,dblExp);
     }
     else {
-      fraction *= dblExp;
+      fraction = f64_mul(fraction,dblExp);
     }
 
 done:
@@ -3018,7 +3018,7 @@ done:
     }
 
     if (sign) {
-      return -fraction;
+      return f64_mul(fraction,i64_to_f64(-1));
     }
     return fraction;
 }
