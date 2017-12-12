@@ -6,7 +6,6 @@
 
 #include <stddef.h>
 #include <stdarg.h>
-#include <math.h>
 #include <mruby.h>
 #include <mruby/array.h>
 #include <mruby/class.h>
@@ -31,6 +30,9 @@ void abort(void);
 }  /* extern "C" { */
 #endif
 #endif
+float64_t NAN = {0xFFFFFFFFFFFFFFFF};
+float64_t INFINITY = {0x7FF0000000000000};
+float64_t NEGATIVE_INFINITY = {0xFFF0000000000000};
 
 #define STACK_INIT_SIZE 128
 #define CALLINFO_INIT_SIZE 32
@@ -2198,8 +2200,18 @@ RETRY_TRY_BLOCK:
     }
 
 #define TYPES2(a,b) ((((uint16_t)(a))<<8)|(((uint16_t)(b))&0xff))
-#define OP_MATH_BODY(op,v1,v2) do {\
-  v1(regs[a]) = v1(regs[a]) op v2(regs[a+1]);\
+
+#define OP_MATH_BODY_F64_F64(op,v1,v2) do {\
+    v1(regs[a]) = op(v1(regs[a]),v2(regs[a+1]));\
+} while(0)
+#define OP_MATH_BODY_I64_F64(op,v1,v2) do {\
+    v1(regs[a]) = op(i64_to_f64(v1(regs[a])),v2(regs[a+1]));\
+} while(0)
+#define OP_MATH_BODY_F64_I64(op,v1,v2) do {\
+    v1(regs[a]) = op(v1(regs[a]),i64_to_f64(v2(regs[a+1])));\
+} while(0)
+#define OP_MATH_BODY_I64_I64(op,v1,v2) do {\
+    v1(regs[a]) = v1(regs[a]) op v2(regs[a+1]);\
 } while(0)
 
     CASE(OP_ADD) {
@@ -2217,7 +2229,7 @@ RETRY_TRY_BLOCK:
           y = mrb_fixnum(regs_a[1]);
           if (mrb_int_add_overflow(x, y, &z)) {
 #ifndef MRB_WITHOUT_FLOAT
-            SET_FLOAT_VALUE(mrb, regs_a[0], (mrb_float)x + (mrb_float)y);
+            SET_FLOAT_VALUE(mrb, regs_a[0], f64_add(i64_to_f64(x),i64_to_f64(y)));
             break;
 #endif
           }
@@ -2229,7 +2241,7 @@ RETRY_TRY_BLOCK:
         {
           mrb_int x = mrb_fixnum(regs[a]);
           mrb_float y = mrb_float(regs[a+1]);
-          SET_FLOAT_VALUE(mrb, regs[a], (mrb_float)x + y);
+          SET_FLOAT_VALUE(mrb, regs[a], f64_add(i64_to_f64(x),y));
         }
         break;
       case TYPES2(MRB_TT_FLOAT,MRB_TT_FIXNUM):
@@ -2240,7 +2252,7 @@ RETRY_TRY_BLOCK:
           SET_FLOAT_VALUE(mrb, regs[a], x + y);
         }
 #else
-        OP_MATH_BODY(+,mrb_float,mrb_fixnum);
+        OP_MATH_BODY_F64_I64(f64_add,mrb_float,mrb_fixnum);
 #endif
         break;
       case TYPES2(MRB_TT_FLOAT,MRB_TT_FLOAT):
@@ -2251,7 +2263,7 @@ RETRY_TRY_BLOCK:
           SET_FLOAT_VALUE(mrb, regs[a], x + y);
         }
 #else
-        OP_MATH_BODY(+,mrb_float,mrb_float);
+        OP_MATH_BODY_F64_F64(f64_add,mrb_float,mrb_float);
 #endif
         break;
 #endif
@@ -2279,7 +2291,7 @@ RETRY_TRY_BLOCK:
           y = mrb_fixnum(regs[a+1]);
           if (mrb_int_sub_overflow(x, y, &z)) {
 #ifndef MRB_WITHOUT_FLOAT
-            SET_FLOAT_VALUE(mrb, regs[a], (mrb_float)x - (mrb_float)y);
+            SET_FLOAT_VALUE(mrb, regs[a], f64_sub(i64_to_f64(x),i64_to_f64(y)));
             break;
 #endif
           }
@@ -2291,7 +2303,7 @@ RETRY_TRY_BLOCK:
         {
           mrb_int x = mrb_fixnum(regs[a]);
           mrb_float y = mrb_float(regs[a+1]);
-          SET_FLOAT_VALUE(mrb, regs[a], (mrb_float)x - y);
+          SET_FLOAT_VALUE(mrb, regs[a], f64_sub(i64_to_f64(x),y));
         }
         break;
       case TYPES2(MRB_TT_FLOAT,MRB_TT_FIXNUM):
@@ -2302,7 +2314,7 @@ RETRY_TRY_BLOCK:
           SET_FLOAT_VALUE(mrb, regs[a], x - y);
         }
 #else
-        OP_MATH_BODY(-,mrb_float,mrb_fixnum);
+        OP_MATH_BODY_F64_I64(f64_sub,mrb_float,mrb_fixnum);
 #endif
         break;
       case TYPES2(MRB_TT_FLOAT,MRB_TT_FLOAT):
@@ -2313,7 +2325,7 @@ RETRY_TRY_BLOCK:
           SET_FLOAT_VALUE(mrb, regs[a], x - y);
         }
 #else
-        OP_MATH_BODY(-,mrb_float,mrb_float);
+        OP_MATH_BODY_F64_F64(f64_sub,mrb_float,mrb_float);
 #endif
         break;
 #endif
@@ -2337,7 +2349,7 @@ RETRY_TRY_BLOCK:
           y = mrb_fixnum(regs[a+1]);
           if (mrb_int_mul_overflow(x, y, &z)) {
 #ifndef MRB_WITHOUT_FLOAT
-            SET_FLOAT_VALUE(mrb, regs[a], (mrb_float)x * (mrb_float)y);
+            SET_FLOAT_VALUE(mrb, regs[a], f64_mul(i64_to_f64(x),i64_to_f64(y)));
             break;
 #endif
           }
@@ -2349,7 +2361,7 @@ RETRY_TRY_BLOCK:
         {
           mrb_int x = mrb_fixnum(regs[a]);
           mrb_float y = mrb_float(regs[a+1]);
-          SET_FLOAT_VALUE(mrb, regs[a], (mrb_float)x * y);
+          SET_FLOAT_VALUE(mrb, regs[a], f64_mul(i64_to_f64(x),y));
         }
         break;
       case TYPES2(MRB_TT_FLOAT,MRB_TT_FIXNUM):
@@ -2360,7 +2372,7 @@ RETRY_TRY_BLOCK:
           SET_FLOAT_VALUE(mrb, regs[a], x * y);
         }
 #else
-        OP_MATH_BODY(*,mrb_float,mrb_fixnum);
+        OP_MATH_BODY_F64_I64(f64_mul,mrb_float,mrb_fixnum);
 #endif
         break;
       case TYPES2(MRB_TT_FLOAT,MRB_TT_FLOAT):
@@ -2371,7 +2383,7 @@ RETRY_TRY_BLOCK:
           SET_FLOAT_VALUE(mrb, regs[a], x * y);
         }
 #else
-        OP_MATH_BODY(*,mrb_float,mrb_float);
+        OP_MATH_BODY_F64_F64(f64_mul,mrb_float,mrb_float);
 #endif
         break;
 #endif
@@ -2385,7 +2397,7 @@ RETRY_TRY_BLOCK:
       /* A B C  R(A) := R(A)/R(A+1) (Syms[B]=:/,C=1)*/
       int a = GETARG_A(i);
 #ifndef MRB_WITHOUT_FLOAT
-      double x, y, f;
+      float64_t x, y, f;
 #endif
 
       /* need to check if op is overridden */
@@ -2399,16 +2411,16 @@ RETRY_TRY_BLOCK:
         }
         break;
 #else
-        x = (mrb_float)mrb_fixnum(regs[a]);
-        y = (mrb_float)mrb_fixnum(regs[a+1]);
+        x = i64_to_f64(mrb_fixnum(regs[a]));
+        y = i64_to_f64(mrb_fixnum(regs[a+1]));
         break;
       case TYPES2(MRB_TT_FIXNUM,MRB_TT_FLOAT):
-        x = (mrb_float)mrb_fixnum(regs[a]);
+        x = i64_to_f64(mrb_fixnum(regs[a]));
         y = mrb_float(regs[a+1]);
         break;
       case TYPES2(MRB_TT_FLOAT,MRB_TT_FIXNUM):
         x = mrb_float(regs[a]);
-        y = (mrb_float)mrb_fixnum(regs[a+1]);
+        y = i64_to_f64(mrb_fixnum(regs[a+1]));
         break;
       case TYPES2(MRB_TT_FLOAT,MRB_TT_FLOAT):
         x = mrb_float(regs[a]);
@@ -2420,13 +2432,13 @@ RETRY_TRY_BLOCK:
       }
 
 #ifndef MRB_WITHOUT_FLOAT
-      if (y == 0) {
-        if (x > 0) f = INFINITY;
-        else if (x < 0) f = -INFINITY;
+      if (f64_eq(y,i64_to_f64(0))) {
+        if (f64_lt(i64_to_f64(0),x)) f = INFINITY;
+        else if (f64_lt(x,i64_to_f64(0))) f = NEGATIVE_INFINITY;
         else /* if (x == 0) */ f = NAN;
       }
       else {
-        f = x / y;
+        f = f64_div(x,y);
       }
       SET_FLOAT_VALUE(mrb, regs[a], f);
 #endif
@@ -2447,7 +2459,7 @@ RETRY_TRY_BLOCK:
 
           if (mrb_int_add_overflow(x, y, &z)) {
 #ifndef MRB_WITHOUT_FLOAT
-            SET_FLOAT_VALUE(mrb, regs[a], (mrb_float)x + (mrb_float)y);
+            SET_FLOAT_VALUE(mrb, regs[a], f64_add(i64_to_f64(x),i64_to_f64(y)));
             break;
 #endif
           }
@@ -2462,7 +2474,7 @@ RETRY_TRY_BLOCK:
           SET_FLOAT_VALUE(mrb, regs[a], x + GETARG_C(i));
         }
 #else
-        mrb_float(regs[a]) += GETARG_C(i);
+        mrb_float(regs[a]) = f64_add(mrb_float(regs[a]),i64_to_f64(GETARG_C(i)));
 #endif
         break;
 #endif
@@ -2489,7 +2501,7 @@ RETRY_TRY_BLOCK:
 
           if (mrb_int_sub_overflow(x, y, &z)) {
 #ifndef MRB_WITHOUT_FLOAT
-            SET_FLOAT_VALUE(mrb, regs_a[0], (mrb_float)x - (mrb_float)y);
+            SET_FLOAT_VALUE(mrb, regs_a[0], f64_sub(i64_to_f64(x),i64_to_f64(y)));
             break;
 #endif
           }
@@ -2504,7 +2516,7 @@ RETRY_TRY_BLOCK:
           SET_FLOAT_VALUE(mrb, regs[a], x - GETARG_C(i));
         }
 #else
-        mrb_float(regs_a[0]) -= GETARG_C(i);
+        mrb_float(regs_a[0]) =f64_sub(mrb_float(regs_a[0]),i64_to_f64(GETARG_C(i)));
 #endif
         break;
 #endif
@@ -2516,7 +2528,14 @@ RETRY_TRY_BLOCK:
       NEXT;
     }
 
-#define OP_CMP_BODY(op,v1,v2) (v1(regs[a]) op v2(regs[a+1]))
+#define OP_CMP_BODY_I64_I64(op,v1,v2) (v1(regs[a]) op v2(regs[a+1]))
+#define OP_CMP_BODY_I64_F64(op,v1,v2) (op(i64_to_f64(v1(regs[a])),v2(regs[a+1])))
+#define OP_CMP_BODY_F64_I64(op,v1,v2) (op(v1(regs[a]),i64_to_f64(v2(regs[a+1]))))
+#define OP_CMP_BODY_F64_F64(op,v1,v2) (op(v1(regs[a]),v2(regs[a+1])))
+#define OP_CMP_BODY_REV_I64_I64(op,v1,v2) (v1(regs[a]) op v2(regs[a+1]))
+#define OP_CMP_BODY_REV_F64_I64(op,v1,v2) (op(i64_to_f64(v2(regs[a+1])),v1(regs[a])))
+#define OP_CMP_BODY_REV_I64_F64(op,v1,v2) (op(v2(regs[a+1]),i64_to_f64(v1(regs[a]))))
+#define OP_CMP_BODY_REV_F64_F64(op,v1,v2) (op(v2(regs[a+1]),v1(regs[a])))
 
 #ifdef MRB_WITHOUT_FLOAT
 #define OP_CMP(op) do {\
@@ -2537,21 +2556,48 @@ RETRY_TRY_BLOCK:
   }\
 } while(0)
 #else
-#define OP_CMP(op) do {\
+#define OP_CMP(op1,op2) do {\
   int result;\
   /* need to check if - is overridden */\
   switch (TYPES2(mrb_type(regs[a]),mrb_type(regs[a+1]))) {\
   case TYPES2(MRB_TT_FIXNUM,MRB_TT_FIXNUM):\
-    result = OP_CMP_BODY(op,mrb_fixnum,mrb_fixnum);\
+    result = OP_CMP_BODY_I64_I64(op1,mrb_fixnum,mrb_fixnum);\
     break;\
   case TYPES2(MRB_TT_FIXNUM,MRB_TT_FLOAT):\
-    result = OP_CMP_BODY(op,mrb_fixnum,mrb_float);\
+    result = OP_CMP_BODY_I64_F64(op2,mrb_fixnum,mrb_float);\
     break;\
   case TYPES2(MRB_TT_FLOAT,MRB_TT_FIXNUM):\
-    result = OP_CMP_BODY(op,mrb_float,mrb_fixnum);\
+    result = OP_CMP_BODY_F64_I64(op2,mrb_float,mrb_fixnum);\
     break;\
   case TYPES2(MRB_TT_FLOAT,MRB_TT_FLOAT):\
-    result = OP_CMP_BODY(op,mrb_float,mrb_float);\
+    result = OP_CMP_BODY_F64_F64(op2,mrb_float,mrb_float);\
+    break;\
+  default:\
+    goto L_SEND;\
+  }\
+  if (result) {\
+    SET_TRUE_VALUE(regs[a]);\
+  }\
+  else {\
+    SET_FALSE_VALUE(regs[a]);\
+  }\
+} while(0)
+
+#define OP_CMP_REV(op1,op2) do {\
+  int result;\
+  /* need to check if - is overridden */\
+  switch (TYPES2(mrb_type(regs[a]),mrb_type(regs[a+1]))) {\
+  case TYPES2(MRB_TT_FIXNUM,MRB_TT_FIXNUM):\
+    result = OP_CMP_BODY_REV_I64_I64(op1,mrb_fixnum,mrb_fixnum);\
+    break;\
+  case TYPES2(MRB_TT_FIXNUM,MRB_TT_FLOAT):\
+    result = OP_CMP_BODY_REV_I64_F64(op2,mrb_fixnum,mrb_float);\
+    break;\
+  case TYPES2(MRB_TT_FLOAT,MRB_TT_FIXNUM):\
+    result = OP_CMP_BODY_REV_F64_I64(op2,mrb_float,mrb_fixnum);\
+    break;\
+  case TYPES2(MRB_TT_FLOAT,MRB_TT_FLOAT):\
+    result = OP_CMP_BODY_REV_F64_F64(op2,mrb_float,mrb_float);\
     break;\
   default:\
     goto L_SEND;\
@@ -2572,7 +2618,7 @@ RETRY_TRY_BLOCK:
         SET_TRUE_VALUE(regs[a]);
       }
       else {
-        OP_CMP(==);
+        OP_CMP(==,f64_eq);
       }
       NEXT;
     }
@@ -2580,28 +2626,28 @@ RETRY_TRY_BLOCK:
     CASE(OP_LT) {
       /* A B C  R(A) := R(A)<R(A+1) (Syms[B]=:<,C=1)*/
       int a = GETARG_A(i);
-      OP_CMP(<);
+      OP_CMP(<,f64_lt);
       NEXT;
     }
 
     CASE(OP_LE) {
       /* A B C  R(A) := R(A)<=R(A+1) (Syms[B]=:<=,C=1)*/
       int a = GETARG_A(i);
-      OP_CMP(<=);
+      OP_CMP(<=,f64_le);
       NEXT;
     }
 
     CASE(OP_GT) {
       /* A B C  R(A) := R(A)>R(A+1) (Syms[B]=:>,C=1)*/
       int a = GETARG_A(i);
-      OP_CMP(>);
+      OP_CMP_REV(>,f64_lt);
       NEXT;
     }
 
     CASE(OP_GE) {
       /* A B C  R(A) := R(A)>=R(A+1) (Syms[B]=:>=,C=1)*/
       int a = GETARG_A(i);
-      OP_CMP(>=);
+      OP_CMP_REV(>=,f64_lt);
       NEXT;
     }
 
