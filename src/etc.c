@@ -99,7 +99,7 @@ mrb_float_id(mrb_float f)
 
 #ifndef MRB_WITHOUT_FLOAT
   /* normalize -0.0 to 0.0 */
-  if (f == 0) f = 0.0;
+  if (f64_eq(f,i64_to_f64(0))) f = i64_to_f64(0);
 #endif
   while (len--) {
     id = id*65599 + *p;
@@ -134,7 +134,7 @@ mrb_obj_id(mrb_value obj)
 #ifdef MRB_WITHOUT_FLOAT
     return MakeID(mrb_fixnum_id(mrb_fixnum(obj)));
 #else
-    return MakeID2(mrb_float_id((mrb_float)mrb_fixnum(obj)), MRB_TT_FLOAT);
+    return MakeID2(mrb_float_id(i64_to_f64(mrb_fixnum(obj))), MRB_TT_FLOAT);
   case MRB_TT_FLOAT:
     return MakeID(mrb_float_id(mrb_float(obj)));
 #endif
