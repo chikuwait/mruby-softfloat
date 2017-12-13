@@ -4969,12 +4969,12 @@ parser_yylex(parser_state *p)
       pylval.nd = new_int(p, "0", 10);
       return tINTEGER;
 #else
-      double d;
+      float64_t d;
       char *endp;
 
       errno = 0;
       d = mrb_float_read(tok(p), &endp);
-      if (d == 0 && endp == tok(p)) {
+      if (f64_eq(d,i64_to_f64(0)) && endp == tok(p)) {
         yywarning_s(p, "corrupted float value %s", tok(p));
       }
       else if (errno == ERANGE) {

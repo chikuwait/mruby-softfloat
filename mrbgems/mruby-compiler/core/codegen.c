@@ -486,7 +486,7 @@ new_lit(codegen_scope *s, mrb_value val)
     for (i=0; i<s->irep->plen; i++) {
       pv = &s->irep->pool[i];
       if (mrb_type(*pv) != MRB_TT_FLOAT) continue;
-      if (mrb_float(*pv) == mrb_float(val)) return i;
+      if (f64_eq(mrb_float(*pv),mrb_float(val))) return i;
     }
     break;
 #endif
@@ -1189,11 +1189,11 @@ raise_error(codegen_scope *s, const char *msg)
 }
 
 #ifndef MRB_WITHOUT_FLOAT
-static double
+static float64_t
 readint_float(codegen_scope *s, const char *p, int base)
 {
   const char *e = p + strlen(p);
-  double f = 0;
+  float64_t f={0};
   int n;
 
   if (*p == '+') p++;
@@ -1202,8 +1202,8 @@ readint_float(codegen_scope *s, const char *p, int base)
     c = tolower((unsigned char)c);
     for (n=0; n<base; n++) {
       if (mrb_digitmap[n] == c) {
-        f *= base;
-        f += n;
+        f = f64_mul(f,i64_to_f64(base));
+        f =f64_add(f,i64_to_f64(n));
         break;
       }
     }
@@ -2266,7 +2266,7 @@ codegen(codegen_scope *s, node *tree, int val)
       i = readint_mrb_int(s, p, base, FALSE, &overflow);
 #ifndef MRB_WITHOUT_FLOAT
       if (overflow) {
-        double f = readint_float(s, p, base);
+        float64_t f = readint_float(s, p, base);
         int off = new_lit(s, mrb_float_value(s->mrb, f));
 
         genop(s, MKOP_ABx(OP_LOADL, cursp(), off));
@@ -2310,7 +2310,7 @@ codegen(codegen_scope *s, node *tree, int val)
         if (val) {
           char *p = (char*)tree;
           mrb_float f = mrb_float_read(p, NULL);
-          int off = new_lit(s, mrb_float_value(s->mrb, -f));
+          int off = new_lit(s, mrb_float_value(s->mrb, f64_mul(f,i64_to_f64(-1))));
 
           genop(s, MKOP_ABx(OP_LOADL, cursp(), off));
           push();
@@ -2329,8 +2329,8 @@ codegen(codegen_scope *s, node *tree, int val)
           i = readint_mrb_int(s, p, base, TRUE, &overflow);
 #ifndef MRB_WITHOUT_FLOAT
           if (overflow) {
-            double f = readint_float(s, p, base);
-            int off = new_lit(s, mrb_float_value(s->mrb, -f));
+            float64_t f = readint_float(s, p, base);
+            int off = new_lit(s, mrb_float_value(s->mrb, f64_mul(f,i64_to_f64(-1))));
 
             genop(s, MKOP_ABx(OP_LOADL, cursp(), off));
           }
