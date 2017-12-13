@@ -8,6 +8,10 @@ MRuby::Build.new do |conf|
     linker.library_paths = ["./"]
   end
   conf.cc.flags << "-mcmodel=kernel -mno-red-zone -mfpmath=387 -mno-sse -mno-sse2 -mno-mmx -mno-3dnow -msoft-float -fno-asynchronous-unwind-tables -fno-omit-frame-pointer -fno-stack-protector"
+
+   conf.cc.defines << %w(DISABLE_STDIO)
+   conf.cc.defines << %w(MRB_INT64)
+   conf.bins = []
 end
 # Define cross build settings
 # MRuby::CrossBuild.new('32bit') do |conf|
