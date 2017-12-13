@@ -15,7 +15,7 @@
 #define ARY_SHRINK_RATIO  5 /* must be larger than 2 */
 #define ARY_C_MAX_SIZE (SIZE_MAX / sizeof(mrb_value))
 #define ARY_MAX_SIZE ((mrb_int)((ARY_C_MAX_SIZE < (size_t)MRB_INT_MAX) ? ARY_C_MAX_SIZE : MRB_INT_MAX-1))
-
+#define f64_to_i64(x) f64_to_i64((x),softfloat_round_min,1)
 static struct RArray*
 ary_new_capa(mrb_state *mrb, mrb_int capa)
 {
@@ -769,7 +769,7 @@ aget_index(mrb_state *mrb, mrb_value index)
   }
 #ifndef MRB_WITHOUT_FLOAT
   else if (mrb_float_p(index)) {
-    return (mrb_int)mrb_float(index);
+    return f64_to_i64(mrb_float(index));
   }
 #endif
   else {
