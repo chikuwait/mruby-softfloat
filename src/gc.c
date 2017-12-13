@@ -126,11 +126,11 @@ typedef struct {
 #include <stdio.h>
 #include <sys/time.h>
 
-static double program_invoke_time = 0;
-static double gc_time = 0;
-static double gc_total_time = 0;
+static float64_t program_invoke_time = {0};
+static float64_t gc_time = {0};
+static float64_t gc_total_time = {0};
 
-static double
+static float64_t
 gettimeofday_time(void)
 {
   struct timeval tv;
