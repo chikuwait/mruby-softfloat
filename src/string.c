@@ -2804,15 +2804,15 @@ static const int maxExponent = 511; /* Largest possible base 10 exponent.  Any
                                      * no need to worry about additional digits.
                                      */
 static const float64_t powersOf10[] = {/* Table giving binary powers of 10.  Entry */
-    10.,                            /* is 10^2^i.  Used to convert decimal */
-    100.,                           /* exponents into floating-point numbers. */
-    1.0e4,
-    1.0e8,
-    1.0e16,
-    1.0e32,
-    1.0e64,
-    1.0e128,
-    1.0e256
+    {0x4024000000000000},                            /* is 10^2^i.  Used to convert decimal */
+    {0x4059000000000000},                           /* exponents into floating-point numbers. */
+    {0x40C3880000000000},
+    {0x4197D78400000000},
+    {0x4341C37937E08000},
+    {0x4693B8B5B5056E17},
+    {0x4D384F03E93FF9F5},
+    {0x5A827748F9301D32},
+    {0x75154FDD7F73Bf3C}
 };
 
 MRB_API float64_t
@@ -2924,6 +2924,7 @@ mrb_float_read(const char *string, char **endPtr)
     }
     else {
       int frac1, frac2;
+      float64_t t = {0x41cdcd6500000000};
       frac1 = 0;
       for ( ; mantSize > 9; mantSize -= 1)
       {
@@ -2946,7 +2947,7 @@ mrb_float_read(const char *string, char **endPtr)
         }
         frac2 = 10*frac2 + (c - '0');
       }
-      fraction = f64_add(f64_mul(f64_mul(i64_to_f64(1),i64_to_f64(1000000000)),i64_to_f64(frac1)),i64_to_f64(frac2));
+      fraction = f64_add(f64_mul(t, i64_to_f64(frac1)), i64_to_f64(frac2));
     }
 
     /*
