@@ -7,22 +7,7 @@ MRuby::Build.new do |conf|
     linker.libraries = %w(softfloat)
     linker.library_paths = ["./"]
   end
-  conf.cc.flags << "-mcmodel=kernel -mno-red-zone -mfpmath=387 -mno-sse -mno-sse2 -mno-mmx -mno-3dnow -msoft-float -fno-asynchronous-unwind-tables -fno-omit-frame-pointer -fno-stack-protector"
+  conf.cc.flags << "-mno-sse -mno-sse2 -mno-mmx -mno-3dnow -msoft-float -fno-omit-frame-pointer"
 
-   conf.cc.defines << %w(DISABLE_STDIO)
-   conf.cc.defines << %w(MRB_INT64)
-   conf.bins = []
+   conf.cc.defines << %w(MRB_INT64 SOFTFLOAT_FAST_INT64 LITTLEENDIAN)
 end
-# Define cross build settings
-# MRuby::CrossBuild.new('32bit') do |conf|
-#   toolchain :gcc
-#
-#   conf.cc.flags << "-m32"
-#   conf.linker.flags << "-m32"
-#
-#   conf.build_mrbtest_lib_only
-#
-#   conf.gem 'examples/mrbgems/c_and_ruby_extension_example'
-#
-#   conf.test_runner.command = 'env'
-# end
