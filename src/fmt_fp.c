@@ -29,13 +29,12 @@ SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 #include <limits.h>
 #include <string.h>
 #include <stdint.h>
-#include <math.h>
 #include <float.h>
 #include <ctype.h>
 
 #include <mruby.h>
 #include <mruby/string.h>
-
+#include <mruby/softfloat.h>
 #ifndef MRB_WITHOUT_FLOAT
 struct fmt_args {
   mrb_state *mrb;
@@ -53,6 +52,41 @@ struct fmt_args {
 #define LEFT_ADJ   (1U<<('-'-' '))
 #define PAD_POS    (1U<<(' '-' '))
 #define MARK_POS   (1U<<('+'-' '))
+#define extF80_signbit(f)((f.signExp>>15))
+#define extF80_isnan(a) (((~(a.signExp) & UINT64_C(0x7FFF)) == 0) && ((a.signif) & UINT64_C(0xFFFFFFFFFFFFFFFF)))
+#define extF80_isinf(a) (((a.signExp & 0x7FFF)==0x7FFF) && (a.signif == 0))
+#define extF80_to_i64(x) extF80_to_i64((x),softfloat_round_min,1)
+#define f64_to_i64(x) f64_to_i64((x),softfloat_round_min,1)
+#define __HI(x) *(1+(int *)&x.v)
+#define __LO(x) *(int *)&x.v
+
+static float64_t two54 =  {0x40000000000000}; /*  0x43500000, 0x00000000 */
+float64_t frexp(float64_t x, int *eptr)
+{
+    int  hx, ix, lx;
+    hx = __HI(x);
+    ix = 0x7fffffff&hx;
+    lx = __LO(x);
+    *eptr = 0;
+    if(ix>=0x7ff00000||((ix|lx)==0)) return x;  /*  0,inf,nan */
+    if (ix<0x00100000) {        /*  subnormal */
+        x =f64_mul(x,two54);
+        hx = __HI(x);
+        ix = hx&0x7fffffff;
+        *eptr = -54;
+    }
+    *eptr += (ix>>20)-1022;
+    hx = (hx&0x800fffff)|0x3fe00000;
+    __HI(x) = hx;
+    return x;
+}
+int
+extF80_isfinite(extFloat80_t f)
+{
+    if(extF80_isinf(f) || extF80_isnan(f)) return 0;
+    return 1;
+}
+
 
 static void
 out(struct fmt_args *f, const char *s, size_t l)
@@ -92,7 +126,7 @@ typedef char compiler_defines_long_double_incorrectly[9-(int)sizeof(long double)
 #endif
 
 static int
-fmt_fp(struct fmt_args *f, long double y, ptrdiff_t p, uint8_t fl, int t)
+fmt_fp(struct fmt_args *f, extFloat80_t y, ptrdiff_t p, uint8_t fl, int t)
 {
   uint32_t big[(LDBL_MANT_DIG+28)/29 + 1          // mantissa expansion
     + (LDBL_MAX_EXP+LDBL_MANT_DIG+28+8)/9]; // exponent expansion
@@ -106,17 +140,17 @@ fmt_fp(struct fmt_args *f, long double y, ptrdiff_t p, uint8_t fl, int t)
   char ebuf0[3*sizeof(int)], *ebuf=&ebuf0[3*sizeof(int)], *estr;
 
   pl=1;
-  if (signbit(y)) {
-    y=-y;
+  if (extF80_signbit(y)) {
+    y = extF80_mul(y,i64_to_extF80(-1));
   } else if (fl & MARK_POS) {
     prefix+=3;
   } else if (fl & PAD_POS) {
     prefix+=6;
   } else prefix++, pl=0;
 
-  if (!isfinite(y)) {
+  if (!extF80_isfinite(y)) {
     const char *ss = (t&32)?"inf":"INF";
-    if (y!=y) ss=(t&32)?"nan":"NAN";
+    if (!extF80_eq(y,y)) ss=(t&32)?"nan":"NAN";
     pad(f, ' ', 0, 3+pl, fl&~ZERO_PAD);
     out(f, prefix, pl);
     out(f, ss, 3);
@@ -124,11 +158,11 @@ fmt_fp(struct fmt_args *f, long double y, ptrdiff_t p, uint8_t fl, int t)
     return 3+(int)pl;
   }
 
-  y = frexp((double)y, &e2) * 2;
-  if (y) e2--;
+  y = f64_to_extF80(f64_mul(frexp(extF80_to_f64(y), &e2),i64_to_f64(2)));
+  if (!extF80_eq(y,i64_to_extF80(0))) e2--;
 
   if ((t|32)=='a') {
-    long double round = 8.0;
+    extFloat80_t round = i64_to_extF80(8);
     ptrdiff_t re;
 
     if (t&32) prefix += 9;
@@ -138,16 +172,16 @@ fmt_fp(struct fmt_args *f, long double y, ptrdiff_t p, uint8_t fl, int t)
     else re=LDBL_MANT_DIG/4-1-p;
 
     if (re) {
-      while (re--) round*=16;
+      while (re--) round = extF80_mul(round,i64_to_extF80(16));
       if (*prefix=='-') {
-        y=-y;
-        y-=round;
-        y+=round;
-        y=-y;
+        y=extF80_mul(y,i64_to_extF80(-1));
+        y=extF80_sub(y,round);
+        y=extF80_add(y,round);
+        y=extF80_sub(y,y);
       }
       else {
-        y+=round;
-        y-=round;
+        y=extF80_add(y,round);
+        y=extF80_sub(y,round);
       }
     }
 
@@ -158,11 +192,11 @@ fmt_fp(struct fmt_args *f, long double y, ptrdiff_t p, uint8_t fl, int t)
 
     s=buf;
     do {
-      int x=(int)y;
+      int x=extF80_to_i64(y);
       *s++=xdigits[x]|(t&32);
-      y=16*(y-x);
-      if (s-buf==1 && (y||p>0||(fl&ALT_FORM))) *s++='.';
-    } while (y);
+      y=extF80_mul(i64_to_extF80(16),extF80_sub(y,i64_to_extF80(x)));
+      if (s-buf==1 && (!extF80_eq(y,i64_to_extF80(0))||p>0||(fl&ALT_FORM))) *s++='.';
+    } while (!extF80_eq(y,i64_to_extF80(0)));
 
     if (p && s-buf-2 < p)
       l = (p+2) + (ebuf-estr);
@@ -180,15 +214,15 @@ fmt_fp(struct fmt_args *f, long double y, ptrdiff_t p, uint8_t fl, int t)
   }
   if (p<0) p=6;
 
-  if (y) y *= 268435456.0, e2-=28;
+  if (!extF80_eq(y,i64_to_extF80(0))) y =extF80_mul(y,i64_to_extF80(268435456)), e2-=28;
 
   if (e2<0) a=r=z=big;
   else a=r=z=big+sizeof(big)/sizeof(*big) - LDBL_MANT_DIG - 1;
 
   do {
-    *z = (uint32_t)y;
-    y = 1000000000*(y-*z++);
-  } while (y);
+    *z = extF80_to_ui32(y,softfloat_round_min,1);
+     y = extF80_mul(i64_to_extF80(1000000000),extF80_sub(y,i32_to_extF80(*z++)));
+  } while (!extF80_eq(y,i64_to_extF80(0)));
 
   while (e2>0) {
     uint32_t carry=0;
@@ -233,16 +267,19 @@ fmt_fp(struct fmt_args *f, long double y, ptrdiff_t p, uint8_t fl, int t)
     x = *d % i;
     /* Are there any significant digits past j? */
     if (x || d+1!=z) {
-      long double round = 2/LDBL_EPSILON;
-      long double small;
-      if (*d/i & 1) round += 2;
-      if (x<i/2) small=0.5;
-      else if (x==i/2 && d+1==z) small=1.0;
-      else small=1.5;
-      if (pl && *prefix=='-') round*=-1, small*=-1;
+      float64_t small1 ={0x3FE0000000000000};
+      float64_t small2 ={0xFF8000000000000};
+      float64_t epsilon={0x3C00000000000000};
+      extFloat80_t round = extF80_div(i64_to_extF80(2),f64_to_extF80(epsilon));
+      extFloat80_t small;
+      if (*d/i & 1) round =extF80_add(round,i64_to_extF80(2));
+      if (x<i/2) small=f64_to_extF80(small1);
+      else if (x==i/2 && d+1==z) small=i64_to_extF80(1.0);
+      else small=f64_to_extF80(small2);
+      if (pl && *prefix=='-') round=extF80_mul(round,i64_to_extF80(-1)), small=extF80_mul(small,i64_to_extF80(-1));
       *d -= x;
       /* Decide whether to round by probing round+small */
-      if (round+small != round) {
+      if (!extF80_eq(extF80_add(round,small),round)){
         *d = *d + i;
         while (*d > 999999999) {
           *d--=0;
@@ -339,7 +376,6 @@ fmt_core(struct fmt_args *f, const char *fmt, mrb_float flo)
     return -1;
   }
   ++fmt;
-
   if (*fmt == '.') {
     ++fmt;
     for (p = 0; ISDIGIT(*fmt); ++fmt) {
@@ -353,7 +389,7 @@ fmt_core(struct fmt_args *f, const char *fmt, mrb_float flo)
   switch (*fmt) {
   case 'e': case 'f': case 'g': case 'a':
   case 'E': case 'F': case 'G': case 'A':
-    return fmt_fp(f, flo, p, 0, *fmt);
+    return fmt_fp(f, f64_to_extF80(flo), p, 0, *fmt);
   default:
     return -1;
   }
