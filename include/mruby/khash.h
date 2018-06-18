@@ -7,7 +7,11 @@
 #ifndef MRUBY_KHASH_H
 #define MRUBY_KHASH_H
 
-#include <string.h>
+#if BITVISOR_PROCESS
+  #include <lib_string.h>
+#else
+  #include <string.h>
+#endif
 
 #include <mruby.h>
 #include "common.h"
